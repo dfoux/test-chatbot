@@ -1,22 +1,34 @@
-import chardet
 import os
 import random
+import re
+from PyPDF2 import PdfReader
 
-def get_random_sentence():
-    # Open the PDF file and read the first 10 pages
-    with open(os.path.join(os.path.dirname(__file__), 'sebenta.pdf'), 'rb') as pdf_file:
-        # Read the PDF file as a byte string
-        pdf_data = pdf_file.read(10 * 1024 * 1024) # Read up to 10MB of data
+def get_random_sentence(pdf_path):
+    with open(pdf_path, 'rb') as pdf_file:
+        pdf_reader = PdfReader(pdf_file)
+        text_list = []
+        for page_num in range(len(pdf_reader.pages)):
+            page_text = pdf_reader.pages[page_num].extract_text()
+            text_list.append(page_text)
+        pdf_text = ' '.join(text_list)
+        sentences = re.split(r'(?<!\w\.\w.)(?<![A-Z][a-z]\.)(?<=\.|…|\?)\s', pdf_text)
+        sentences = [sentence.strip() for sentence in sentences if sentence.strip()]
+        if sentences:
+            return random.choice(sentences)
+        else:
+            return None
 
-        # Determine the encoding of the byte string using chardet
-        result = chardet.detect(pdf_data)
-        encoding = result['encoding']
+def main():
+    pdf_path = input("Enter the location of the PDF file: ")
+    if not os.path.exists(pdf_path):
+        print("File not found.")
+        return
+    random_sentence = get_random_sentence(pdf_path)
+    if random_sentence:
+        print("Random sentence from the PDF:")
+        print(random_sentence)
+    else:
+        print("No sentences found in the PDF.")
 
-        # Decode the byte string using the detected encoding
-        pdf_text = pdf_data.decode(encoding)
-
-        # Split the text into sentences
-        sentences = pdf_text.split('.')
-
-        # Select a random sentence from the list of sentences and return it
-        return random.choice(sentences)
+if __name__ == "__main__":
+    main()
